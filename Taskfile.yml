@@ -1,0 +1,21 @@
+version: '3'
+
+tasks:
+  pent:
+    desc: Enter the thesis-vlm development container
+    interactive: true
+    cmds:
+      - |
+        set -eu
+        container="thesis-vlm-dev"
+
+        if ! docker inspect "$container" >/dev/null 2>&1; then
+          printf 'Docker container %s does not exist. Create it first.\n' "$container" >&2
+          exit 1
+        fi
+
+        if [ -z "$(docker container ls --filter "name=^/${container}$" --quiet)" ]; then
+          docker start "$container" >/dev/null
+        fi
+
+        exec docker exec -it "$container" bash

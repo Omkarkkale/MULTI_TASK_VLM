@@ -1,0 +1,24 @@
+# macOS / editor files
+.DS_Store
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Large project data and generated artifacts
+data/
+extracted/
+results/
+
+# Logs and temporary files
+*.log
+tmp/
+temp/

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crusher · Obstruction review</title>
+<style>
+body{font:16px system-ui;margin:0;background:#f1f3f5;color:#17212b}
+header,main,footer{padding:16px 24px}header{background:white;border-bottom:1px solid #cbd2d9}
+h1{font-size:24px;margin:0 0 8px}p{margin:8px 0;line-height:1.4}
+button,select,input{font:inherit;padding:8px;margin:3px;border:1px solid #929ca5;border-radius:5px;background:white}
+button{cursor:pointer}button:disabled{opacity:.45;cursor:default}
+.views{display:grid;grid-template-columns:1fr 1fr;gap:16px}.view{margin:0;background:#111820;border-radius:8px;overflow:hidden}
+figcaption{background:white;padding:10px;font-weight:650}img{display:block;width:100%;height:44vh;object-fit:contain}
+a{color:#125c9e}.view a{display:block}.hint{color:#4f5c68;font-size:14px}
+.controls{background:white;padding:14px;margin:14px 0;border-radius:8px}.keep{background:#d9f4e5}.reject{background:#ffdfdf}
+#state{font-weight:700}#warning{color:#a22222;font-weight:600}#reason{width:min(70vw,550px)}
+#identity{overflow-wrap:anywhere;font-size:13px;color:#566370}footer{padding-top:0}
+@media(max-width:800px){.views{grid-template-columns:1fr}img{height:35vh}}
+</style>
+<header>
+<h1>Crusher obstruction review</h1>
+<p>Inspect the crusher opening and fill region in <b>both views</b>. Reject the whole sample pair if a truck, vehicle or other object blocks that region in either image. Keep uncertain cases pending.</p>
+<label>Recording <select id="recording"><option value="">All recordings</option></select></label>
+<label>Show <select id="filter"><option value="all">All samples</option><option value="pending">Pending</option><option value="keep">Kept</option><option value="reject">Rejected</option></select></label>
+<label><input id="syncOnly" type="checkbox">Within synchronization limit only</label>
+<span id="progress"></span><p id="warning" role="alert"></p>
+</header>
+<main>
+<div><button id="previous">← Previous</button><span id="position"></span><button id="next">Next →</button><label>Go to sample <input id="jump" type="number" min="1" style="width:80px"></label><button id="go">Go</button></div>
+<h2 id="title"></h2><p id="identity"></p><p id="syncInfo"></p><p id="state" aria-live="polite"></p>
+<div class="views">
+<figure class="view"><figcaption>Front narrow — inspect the crusher fill region</figcaption><a id="narrowLink" target="_blank" rel="noopener"><img id="narrow" alt="Front narrow camera"></a></figure>
+<figure class="view"><figcaption>Front wide — inspect the crusher fill region</figcaption><a id="wideLink" target="_blank" rel="noopener"><img id="wide" alt="Front wide camera"></a></figure>
+</div>
+<p class="hint">Click either image to open its full resolution in a new tab. A vehicle outside the relevant crusher region alone is not an obstruction rejection.</p>
+<section class="controls" id="decisionControls">
+<div><button class="keep" id="keep">Keep — both views clear [K]</button><button class="reject" data-obstruction="narrow">Reject — narrow blocked</button><button class="reject" data-obstruction="wide">Reject — wide blocked</button><button class="reject" data-obstruction="both">Reject — both blocked</button><button class="reject" id="other">Reject — other defect</button><button id="reset">Mark pending</button><button id="undo">Undo last decision [U]</button></div>
+<label>Reason / notes <input id="reason" placeholder="Vehicle obstruction, blur, bad synchronization…"></label>
+<label>Lighting <select id="lighting"><option>pending</option><option>daylight</option><option>night</option><option>transition</option><option>uncertain</option></select></label>
+<label><input id="auto" type="checkbox" checked>Advance after decision</label>
+<p class="hint">K: keep · U: undo · Left/Right: previous/next. Suggested lighting is not automatically approved. Keep only if both images are loaded and usable.</p>
+</section>
+</main>
+<footer>
+<button id="csv">Download decisions CSV</button><button id="backup">Download JSON backup</button><label>Restore JSON <input id="restore" type="file" accept=".json"></label>
+<p class="hint">Decisions are saved in this browser when storage is available. Download a backup before changing browser or clearing its data. Download the CSV as <b>review_decisions.csv</b> and apply it with the filtering script to exclude rejected and unreviewed samples. This page does not delete images or finalize training splits.</p>
+</footer>
+<script>
+'use strict';
+const rows=__SAMPLE_DATA__;
+const key='crusher-v3-review-2026-09-24'; // Shared with the existing candidate review page.
+const byId=new Map(rows.map(r=>[r.sample_id,r]));
+const $=id=>document.getElementById(id);
+const qcValues=['pending','keep','reject'], lightValues=['pending','daylight','night','transition','uncertain'];
+let decisions={}, position=0, current=null, history=[], loaded={narrow:false,wide:false};
+function validate(data){
+ if(!data||typeof data!=='object'||Array.isArray(data))throw Error('Expected a decisions object');
+ for(const [id,d] of Object.entries(data)){
+  if(!byId.has(id)||!d||typeof d!=='object'||Array.isArray(d))throw Error('Unknown sample or invalid decision: '+id);
+  if(d.qc&&!qcValues.includes(d.qc))throw Error('Invalid QC value');
+  if(d.lighting&&!lightValues.includes(d.lighting))throw Error('Invalid lighting value');
+  if(d.reason!==undefined&&typeof d.reason!=='string')throw Error('Invalid reason');
+ }
+ return data;
+}
+try{decisions=validate(JSON.parse(localStorage.getItem(key)||'{}'))}catch(e){$('warning').textContent='Saved decisions could not be loaded: '+e.message+'. Restore a JSON backup if available.'}
+function persist(){try{localStorage.setItem(key,JSON.stringify(decisions))}catch(e){$('warning').textContent='Browser storage unavailable. Download the CSV and JSON backup before closing.'}}
+function visible(){return rows.filter(r=>(!$('syncOnly').checked||r.sync_status==='pass')&&(!$('recording').value||r.recording_id===$('recording').value)&&($('filter').value==='all'||(decisions[r.sample_id]?.qc||'pending')===$('filter').value))}
+function progress(){const count=type=>rows.filter(r=>(decisions[r.sample_id]?.qc||'pending')===type).length;$('progress').textContent=`${count('keep')} kept · ${count('reject')} rejected · ${count('pending')} pending`}
+for(const id of [...new Set(rows.map(r=>r.recording_id))].sort((a,b)=>Number(a)-Number(b))){const option=document.createElement('option');option.value=id;option.textContent=id;$('recording').appendChild(option)}
+function render(){
+ const list=visible();position=Math.max(0,Math.min(position,list.length-1));current=list[position]||null;progress();
+ $('position').textContent=list.length?`${position+1} / ${list.length}`:'No samples';$('jump').max=list.length;$('jump').value=list.length?position+1:'';
+ $('previous').disabled=!current||position===0;$('next').disabled=!current||position===list.length-1;
+ for(const button of $('decisionControls').querySelectorAll('button'))button.disabled=!current;
+ $('undo').disabled=!history.length;$('lighting').disabled=$('reason').disabled=!current;
+ loaded={narrow:false,wide:false};$('keep').disabled=true;
+ if(!current){$('title').textContent='No samples match this filter';$('identity').textContent='';$('syncInfo').textContent='';$('state').textContent='';for(const v of ['narrow','wide']){$(v).removeAttribute('src');$(v+'Link').removeAttribute('href')}return}
+ const row=current,d=decisions[row.sample_id]||{};
+ $('title').textContent=`Recording ${row.recording_id} · Fill ${row.fill_level}%`;
+ $('syncInfo').textContent=`Camera-to-camera gap: ${Number(row.camera_pair_delta_ms).toFixed(3)} ms · Limit: ${row.max_camera_pair_ms??'not selected'} ms · Synchronization: ${row.sync_status}${row.sync_reason?' — '+row.sync_reason:''}`;
+ $('identity').textContent=`${row.sample_id} · ${new Date(Number(BigInt(row.fill_timestamp_ns)/1000000n)).toISOString()} · Suggested lighting: ${row.suggested_lighting} · Image/label offsets: narrow ${Number(row.narrow_signed_delta_seconds).toFixed(3)} s, wide ${Number(row.wide_signed_delta_seconds).toFixed(3)} s`;
+ $('state').textContent=`QC: ${d.qc||'pending'}${d.reason?' — '+d.reason:''}`;$('reason').value=d.reason||'';$('lighting').value=d.lighting||'pending';
+ for(const v of ['narrow','wide']){
+  const im=$(v);im.onload=()=>{if(current?.sample_id!==row.sample_id)return;loaded[v]=true;$('keep').disabled=!(loaded.narrow&&loaded.wide&&row.export_status==='decoded_candidate'&&row.sync_status!=='reject')};
+  im.onerror=()=>{if(current?.sample_id!==row.sample_id)return;loaded[v]=false;$('keep').disabled=true;$('state').textContent='Image failed to load — leave pending or reject; do not keep.'};
+  if(row[v+'_image']){im.src=row[v+'_image'];$(v+'Link').href=row[v+'_image']}else{im.removeAttribute('src');$(v+'Link').removeAttribute('href');$('state').textContent='Missing image — cannot keep.'}
+ }
+}
+function commit(qc,reason,obstructedView=''){
+ if(!current)return;
+ if(qc==='keep'&&$('keep').disabled)return;
+ const id=current.sample_id,old=decisions[id];history.push({id,old:old?{...old}:null});
+ decisions[id]={...(old||{}),qc,reason,obstructed_view:obstructedView,lighting:$('lighting').value,reviewed_at:new Date().toISOString()};persist();
+ const list=visible(),index=list.findIndex(r=>r.sample_id===id);
+ if($('auto').checked){position=index<0?position:Math.min(index+1,list.length-1)}else if(index>=0){position=index}
+ render();
+}
+$('keep').onclick=()=>commit('keep','');
+document.querySelectorAll('[data-obstruction]').forEach(button=>button.onclick=()=>commit('reject','vehicle_or_object_obstructs_crusher_'+button.dataset.obstruction,button.dataset.obstruction));
+$('other').onclick=()=>{const reason=$('reason').value.trim();if(!reason){$('reason').focus();$('state').textContent='Enter a reason for the other defect first.';return}commit('reject',reason)};
+$('reset').onclick=()=>commit('pending','');
+function undo(){const last=history.pop();if(!last)return;if(last.old)decisions[last.id]=last.old;else delete decisions[last.id];persist();$('recording').value=byId.get(last.id).recording_id;$('filter').value='all';if(byId.get(last.id).sync_status!=='pass')$('syncOnly').checked=false;position=visible().findIndex(r=>r.sample_id===last.id);render()}
+$('undo').onclick=undo;
+for(const field of ['reason','lighting'])$(field).onchange=()=>{if(!current)return;const id=current.sample_id;decisions[id]={...(decisions[id]||{}),[field]:$(field).value};persist();progress();$('state').textContent=`QC: ${decisions[id].qc||'pending'} — ${decisions[id].reason||''}`};
+function move(amount){const list=visible();position=Math.max(0,Math.min(position+amount,list.length-1));render()}
+$('previous').onclick=()=>move(-1);$('next').onclick=()=>move(1);$('go').onclick=()=>{const value=Number($('jump').value);if(Number.isInteger(value)&&value>0){position=value-1;render()}};
+$('recording').onchange=$('filter').onchange=$('syncOnly').onchange=()=>{position=0;render()};
+document.addEventListener('keydown',e=>{if(['INPUT','SELECT','TEXTAREA','BUTTON'].includes(e.target.tagName)||e.ctrlKey||e.metaKey||e.altKey)return;if(e.key==='ArrowRight'){e.preventDefault();move(1)}else if(e.key==='ArrowLeft'){e.preventDefault();move(-1)}else if(e.key.toLowerCase()==='k'){$('keep').click()}else if(e.key.toLowerCase()==='u'){undo()}});
+function download(name,data,type){const a=document.createElement('a');const url=URL.createObjectURL(new Blob([data],{type}));a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+$('csv').onclick=()=>{const fields=['sample_id','lighting','qc','reason','obstructed_view','reviewed_at'];const quote=value=>'"'+String(value??'').replaceAll('"','""')+'"';download('review_decisions.csv',[fields.join(','),...rows.map(r=>{const d=decisions[r.sample_id]||{};return[r.sample_id,d.lighting||'pending',d.qc||'pending',d.reason||'',d.obstructed_view||'',d.reviewed_at||''].map(quote).join(',')})].join('\n'),'text/csv')};
+$('backup').onclick=()=>download('review_decisions_backup.json',JSON.stringify(decisions,null,2),'application/json');
+$('restore').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;const restored=validate(JSON.parse(await file.text()));decisions={...decisions,...restored};history=[];persist();render()}catch(e){$('warning').textContent='Restore failed: '+e.message}};
+$('syncOnly').checked=rows.some(r=>r.max_camera_pair_ms!==null);render();
+</script>
+</html>
