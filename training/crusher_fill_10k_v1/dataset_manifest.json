@@ -1,0 +1,11 @@
+{
+  "experiment_id": "crusher_fill_10k_v1",
+  "status": "TEMPLATE_NOT_FROZEN",
+  "dataset_release": "CONFIRM_FINAL_CLEAN_10K_RELEASE",
+  "metadata_csv": "CONFIRM_PATH",
+  "image_root": "CONFIRM_PATH",
+  "row_count": null,
+  "recording_ids": [],
+  "cleaning_protocol": "CONFIRM_DATASET_PROTOCOL_AND_VERSION",
+  "notes": "Record this before creating the official split. Do not edit after the protocol is frozen."
+}

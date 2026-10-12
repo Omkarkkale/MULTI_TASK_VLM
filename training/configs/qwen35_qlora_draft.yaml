@@ -1,0 +1,60 @@
+# Discussion draft only.  Do not mark approved_for_run true until the
+# experiment protocol has been reviewed with Bjarne.
+
+experiment:
+  name: crusher-qwen35-qlora-draft
+  approved_for_run: false
+  task: CONFIRM_WITH_BJARNE_continuous_fill_level_0_to_100
+  split_unit: recording_id
+  primary_metric: mae_percentage_points
+  random_seeds: [42]  # CONFIRM_WITH_BJARNE: final plan should normally use >= 3.
+
+dataset:
+  # Set these to the approved clean dataset release, never to raw candidates.
+  root: CONFIRM_WITH_BJARNE_DATASET_ROOT
+  metadata_csv: CONFIRM_WITH_BJARNE_MASTER_METADATA_CLEAN_CSV
+  required_columns:
+    - recording_id
+    - sample
+    - front_narrow
+    - front_wide
+    - fill_level
+  views: [front_narrow, front_wide]  # CONFIRM_WITH_BJARNE
+
+prompt:
+  # Tune wording only on validation recordings, then freeze it before test.
+  text: >-
+    Estimate the fill level of the industrial crusher shown in the two images.
+    Use visual information from both images. Return only one numeric percentage
+    from 0 to 100.
+  answer_format: numeric_percentage
+  max_new_tokens: 16
+  invalid_output_policy: CONFIRM_WITH_BJARNE_count_as_invalid_and_report_rate
+  decoding:
+    do_sample: false
+    temperature: 0.0
+
+model:
+  id: Qwen/Qwen3.5-9B
+  load_in_4bit: true
+  quantization_type: nf4
+  double_quantization: true
+  compute_dtype: bfloat16
+
+qlora:
+  # These are starting points only, not final thesis choices.
+  lora_rank: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: CONFIRM_WITH_BJARNE_AFTER_MODEL_LOAD_INSPECTION
+  learning_rate: 0.0002
+  num_train_epochs: 3
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
+  gradient_checkpointing: true
+  warmup_ratio: 0.05
+  seed: 42
+
+output:
+  # Ignored by Git when placed under results/.
+  root: results/training

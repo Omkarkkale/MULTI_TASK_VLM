@@ -1,0 +1,9 @@
+# Remote training environment dependencies. Install in the project venv.
+torch==2.7.1+cu128
+torchvision==0.22.1+cu128
+transformers==5.19.0
+accelerate==1.15.0
+peft==0.21.2
+bitsandbytes==0.50.2
+Pillow>=10
+PyYAML>=6

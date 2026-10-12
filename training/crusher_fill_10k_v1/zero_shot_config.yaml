@@ -1,0 +1,24 @@
+# Official zero-shot configuration for the frozen 10k test split.
+# All CONFIRM values need agreement before the run.
+experiment:
+  id: crusher_fill_10k_v1_zero_shot
+  status: draft
+  approved_for_run: false
+  split_used: test
+
+dataset:
+  manifest: training/crusher_fill_10k_v1/dataset_manifest.json
+  test_metadata_csv: CONFIRM_GENERATED_TEST_METADATA_CSV
+  image_root: CONFIRM_FINAL_IMAGE_ROOT
+
+model:
+  id: Qwen/Qwen3.5-9B
+
+prompt:
+  text: CONFIRM_FINAL_PROMPT_AFTER_VALIDATION_ONLY
+  max_new_tokens: 16
+  do_sample: false
+  invalid_output_policy: CONFIRM_FINAL_POLICY
+
+output:
+  root: results/training/crusher_fill_10k_v1/zero_shot

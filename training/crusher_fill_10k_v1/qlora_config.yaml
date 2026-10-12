@@ -1,0 +1,37 @@
+# Official QLoRA configuration for the frozen 10k experiment.
+# The values below are starting points, not approved final hyperparameters.
+experiment:
+  id: crusher_fill_10k_v1_qlora
+  status: draft
+  approved_for_run: false
+  primary_metric: mae_percentage_points
+  final_seeds: CONFIRM_WITH_BJARNE
+
+dataset:
+  manifest: training/crusher_fill_10k_v1/dataset_manifest.json
+  train_metadata_csv: CONFIRM_GENERATED_TRAIN_METADATA_CSV
+  val_metadata_csv: CONFIRM_GENERATED_VAL_METADATA_CSV
+  test_metadata_csv: CONFIRM_GENERATED_TEST_METADATA_CSV
+  image_root: CONFIRM_FINAL_IMAGE_ROOT
+  views: [front_narrow, front_wide]
+
+model:
+  id: Qwen/Qwen3.5-9B
+  load_in_4bit: true
+  quantization_type: nf4
+  compute_dtype: bfloat16
+
+qlora:
+  lora_rank: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules: CONFIRM_AFTER_MODEL_INSPECTION
+  learning_rate: 0.0002
+  num_train_epochs: 3
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
+  gradient_checkpointing: true
+  seed: 42
+
+output:
+  root: results/training/crusher_fill_10k_v1/qlora

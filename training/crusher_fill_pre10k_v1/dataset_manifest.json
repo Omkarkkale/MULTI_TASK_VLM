@@ -1,0 +1,11 @@
+{
+  "experiment_id": "crusher_fill_pre10k_v1",
+  "status": "prepared_for_exploratory_zero_shot_only",
+  "dataset_release": "crusher_dataset_v4",
+  "metadata_csv": "extracted/crusher_dataset_v4/master_metadata_clean.csv",
+  "image_root": "extracted/crusher_dataset_v4",
+  "source_roots_json": "extracted/crusher_dataset_v4/source_roots.json",
+  "row_count": 9599,
+  "recording_count": 59,
+  "notes": "Exploratory only; this is not the frozen final test protocol. Dataset provenance is in extracted/crusher_dataset_v4/dataset_manifest.json."
+}
