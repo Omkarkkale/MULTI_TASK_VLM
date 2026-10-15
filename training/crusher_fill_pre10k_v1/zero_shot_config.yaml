@@ -3,8 +3,8 @@ experiment:
   id: crusher_fill_pre10k_v1_zero_shot
   status: exploratory
   approved_for_final_claim: false
-  # Keep false while preparing. A real run downloads/loads Qwen and writes results.
-  allow_run: false
+  # A real run downloads/loads Qwen and writes results.
+  allow_run: true
 
 dataset:
   dataset_release: crusher_dataset_v4
@@ -23,7 +23,7 @@ prompt:
     Use visual information from both images. The fill level is a percentage from
     0 to 100, where 0 means completely empty and 100 means completely full.
     Return only the estimated percentage.
-  max_new_tokens: 16
+  max_new_tokens: 256
   do_sample: false
   # Default Qwen3.5 mode. Full reasoning is retained; only text after </think>
   # is parsed as the final numeric answer.
