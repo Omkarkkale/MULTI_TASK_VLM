@@ -1,0 +1,4 @@
+recording_id,split,notes
+# After Bjarne review, replace this template with one row per source recording.
+# Permitted splits: train, val, test
+# A recording must occur exactly once.

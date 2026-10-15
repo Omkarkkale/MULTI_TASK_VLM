@@ -1,0 +1,33 @@
+# Exploratory configuration for the current combined clean pool.
+experiment:
+  id: crusher_fill_pre10k_v1_zero_shot
+  status: exploratory
+  approved_for_final_claim: false
+  # Keep false while preparing. A real run downloads/loads Qwen and writes results.
+  allow_run: false
+
+dataset:
+  dataset_release: crusher_dataset_v4
+  metadata_csv: extracted/crusher_dataset_v4/master_metadata_clean.csv
+  image_root: extracted/crusher_dataset_v4
+  source_roots_json: extracted/crusher_dataset_v4/source_roots.json
+  purpose: preliminary_zero_shot_only
+
+model:
+  id: Qwen/Qwen3.5-9B
+
+prompt:
+  # Same fixed two-image prompt used by the earlier benchmark.
+  text: >-
+    Estimate the fill level of the industrial crusher shown in the two images.
+    Use visual information from both images. The fill level is a percentage from
+    0 to 100, where 0 means completely empty and 100 means completely full.
+    Return only the estimated percentage.
+  max_new_tokens: 16
+  do_sample: false
+  # Default Qwen3.5 mode. Full reasoning is retained; only text after </think>
+  # is parsed as the final numeric answer.
+  enable_thinking: true
+
+output:
+  root: results/training/crusher_fill_pre10k_v1/qwen35_9b_zero_shot
