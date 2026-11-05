@@ -23,11 +23,10 @@ prompt:
     Use visual information from both images. The fill level is a percentage from
     0 to 100, where 0 means completely empty and 100 means completely full.
     Return only the estimated percentage.
-  max_new_tokens: 256
+  max_new_tokens: 32
   do_sample: false
-  # Default Qwen3.5 mode. Full reasoning is retained; only text after </think>
-  # is parsed as the final numeric answer.
-  enable_thinking: true
+  # Direct-output mode keeps the numeric evaluation parseable and cost-bounded.
+  enable_thinking: false
 
 output:
-  root: results/training/crusher_fill_pre10k_v1/qwen35_9b_zero_shot
+  root: results/training/crusher_fill_pre10k_v1/qwen35_9b_zero_shot_direct_v1
